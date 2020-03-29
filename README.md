@@ -1,0 +1,2 @@
+# scrollMusicPro
+简单实现一个用node开发后端vue实现前端，开发音乐播放功能
