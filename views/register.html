@@ -1,0 +1,174 @@
+{{ extend './layout/main.html'}}
+   
+{{block 'content'}}
+
+    <style type="text/css">
+         #pwd-level div {
+        height: 30px;
+        width: 30px;
+        display: inline-block;
+        float: left;
+    }
+    
+    #pwd-level span {
+        display: inline-block;
+        float: left;
+    }
+    </style>
+
+    <link href="/public/css/register.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript">
+    </script>
+    <div class="aw-register-box">
+        <div class="mod-head">
+            <a href="/"></a>
+            <h1>注册新用户</h1>
+        </div>
+        <div class="mod-body">
+            <form action="" class="aw-register-form" method="post" id="register_form">
+                <ul>
+                    <li class="alert alert-danger hide error_message text-left">
+                        <i class="icon icon-delete"></i> <em></em>
+                    </li>
+                    <li>
+                        <input class="aw-register-name form-control" type="text" name="username" id="username" placeholder="用户名" value="" />
+                    </li>
+                    <li>
+                        <input class="aw-register-email form-control" type="text" placeholder="邮箱" name="email" value="" />
+                    </li>
+                    <li>
+                        <input class="aw-register-pwd form-control" type="password" name="password" placeholder="密码" id="password" />
+                    </li>
+                    <div id='pwd-level'>
+                        <span>密码强度:</span>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                    <hr/>
+                    <li class="aw-register-verify">
+                        <img onclick="this.src='/user/pic?'+new Date()" class="pull-right" width="120" src="/user/pic">
+                        <input type="text" class="form-control" name="vcode" placeholder="验证码" />
+                    </li>
+                    <li class="last">
+                        <label>
+                            <input type="checkbox" checked="checked" value="agree" /> 我同意</label> <a href="javascript:;" class="aw-agreement-btn">用户协议</a>
+                        <a href="/login" class="pull-right">已有账号?</a>
+                        <div class="aw-regiter-agreement hide">
+                            <div class="aw-register-agreement-txt" id="register_agreement"></div>
+                        </div>
+                    </li>
+                    <li class="clearfix">
+                        <button type="submit" class="btn btn-large btn-blue btn-block">
+                            注册
+                        </button>
+                    </li>
+                </ul>
+            </form>
+        </div>
+    </div>
+    <script>
+			let isRegister=0;
+			function checkPassLevel(str) {
+				var tmpLevel = 0;
+        // 三次判断
+        var reg1 = /\d/; // 数字
+        var reg2 = /\w/; // 字母
+        var reg3 = /\W/; //特殊字符
+
+        if(reg1.test(str)) tmpLevel ++;
+        if(reg2.test(str)) tmpLevel ++;
+        if(reg3.test(str)) tmpLevel ++;
+				
+				return tmpLevel;
+			}
+      $('#password').on('keyup',function(){
+				
+				let password = $(this).val();
+				let level=checkPassLevel(password);
+
+				let divs = $('#pwd-level').find('div');
+					// 初始化，将div样式置空
+				for(let i=0;i<divs.length;i++){
+					divs[i].style.backgroundColor = '';
+				}
+
+				var colors = ['yellowgreen','skyblue','hotpink'];
+
+				for(let i=0;i<level;i++){
+					divs[i].style.backgroundColor =colors[i];
+				}
+			
+			})
+			var checkUsername=(function(){
+				
+				let preUser
+				return function(e){
+					let timer
+					
+					let that =this; 
+					console.log('进来了',$(that).val());
+					let username = $(that).val()
+					
+					if(preUser == username) return ;
+					clearTimeout(timer);
+					// 使用节流，避免服务频繁发送
+					timer=setTimeout(() => {
+							$.ajax({
+							type: "post",
+							url: "/music/check-userName",
+							data: 'username=' + username,
+							dataType: "json",
+							success: function (response) {
+								console.log(response);
+								if(response.code == 200){
+									isRegister=1;
+								}else {
+									isRegister=0;
+								}
+							}
+						});
+					}, 500);
+
+					preUser = username;
+				}
+			})()
+			$('#username').on('keyup',checkUsername);
+			
+			$('#register_form').on('submit',function(e) {
+				
+				e.preventDefault();
+				
+				if(isRegister==1){
+					alert('用户名已存在');
+					return
+				}
+				var formData= $(this).serialize();
+				console.log('点我了',formData);
+				$.ajax({
+					type: "post",
+					url: "/music/do-register",
+					data: formData,
+					dataType: "json",
+					success: function (response) {
+						console.log(response);
+						if(response.code =='201'){
+							alert('用户名已存在');
+							return
+						}
+						if(response.code == 002){
+							alert(response.msg);
+							return
+						}
+						if(response.code == 200){
+							if(confirm('是否去登录')){
+								window.location='/music/login'
+							}else {
+								console.log('不去喽');
+							}
+						}
+					}
+				});
+			})
+    </script>
+{{/block}}
